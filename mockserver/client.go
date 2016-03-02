@@ -26,12 +26,19 @@ func NewClient(baseUrl string) *Client {
 func (c *Client) Do(path string, requestBody interface{}) error {
 	c.log.Printf("sending request %v(%T)", path, requestBody)
 
-	serializedBody, err := json.Marshal(requestBody)
-	if err != nil {
-		return err
+	var bodyReader *bytes.Buffer
+
+	if requestBody != nil {
+		serializedBody, err := json.Marshal(requestBody)
+		if err != nil {
+			return err
+		}
+		bodyReader = bytes.NewBuffer(serializedBody)
+	} else {
+		bodyReader = bytes.NewBuffer([]byte{})
 	}
 
-	req, err := http.NewRequest("PUT", fmt.Sprintf("%v%v", c.baseUrl, path), bytes.NewBuffer(serializedBody))
+	req, err := http.NewRequest("PUT", fmt.Sprintf("%v%v", c.baseUrl, path), bodyReader)
 	if err != nil {
 		return err
 	}
@@ -41,8 +48,12 @@ func (c *Client) Do(path string, requestBody interface{}) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return fmt.Errorf("request failed with status %v", resp.StatusCode)
 	}
 	return nil
+}
+
+func (c *Client) Reset() error {
+	return c.Do("/reset", nil)
 }

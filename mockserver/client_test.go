@@ -55,4 +55,9 @@ func TestMockAnyResponse(t *testing.T) {
 	resp, err := http.Get(mockServerBaseUrl + "/test")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	assert.Nil(t, mockServerClient.Reset())
+	resp, err = http.Get(mockServerBaseUrl + "/test")
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
