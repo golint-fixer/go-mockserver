@@ -1,0 +1,3 @@
+package: github.com/ibrt/go-mockserver/mockserver
+import:
+- package: github.com/ory-am/dockertest
