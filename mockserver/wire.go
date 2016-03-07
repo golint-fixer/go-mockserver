@@ -194,5 +194,5 @@ func (m *MockAnyResponse) WithTimeToLive(timeUnit string, timeToLive float64) *M
 }
 
 func (m *MockAnyResponse) Send(client *Client) error {
-	return client.Do("/expectation", m)
+	return client.MockDo("/expectation", m)
 }

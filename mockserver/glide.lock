@@ -1,13 +1,13 @@
-hash: 4c268754c2f28bd7023293eed6c1a6e7b5291bee9892fc0c7aacf48a6298b7e1
-updated: 2016-03-01T19:16:11.029092795-08:00
+hash: ff81663257cb50ce8c1e881580c783d7f214dec61809c7ec7fe4fba2eb810230
+updated: 2016-03-07T12:38:54.218737055-08:00
 imports:
 - name: camlistore.org
-  version: be5440563afe8be7c2cc72f96fafad9dac482470
+  version: 6a205ba71a90a34b7304321e774e7a1fea1e975e
   repo: https://camlistore.org
 - name: camlistore.org/pkg/fileembed
   version: ""
 - name: github.com/davecgh/go-spew
-  version: 2df174808ee097f90d259e432cc04442cf60be21
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
 - name: github.com/go-errors/errors
@@ -17,15 +17,17 @@ imports:
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
   repo: https://github.com/golang/glog
 - name: github.com/golang/protobuf
-  version: 552c7b9542c194800fd493123b3798ef0a832032
+  version: c75fbf01dc6cb73649c4cd4326182c3e44aa9dbb
   repo: https://github.com/golang/protobuf
 - name: github.com/hjfreyer/taglib-go
   version: 0ef8bba9c41b66c12f60ce9833786838d2c2d3d8
+- name: github.com/ibrt/dockertest
+  version: fcdd9873d00e2fe10e5dafa7115976932b9b8813
 - name: github.com/julienschmidt/httprouter
   version: 77366a47451a56bb3ba682481eed85b64fea14e8
   repo: https://github.com/julienschmidt/httprouter
 - name: github.com/lib/pq
-  version: e182dc4027e2ded4b19396d638610f2653295f36
+  version: 165a3529e799da61ab10faed1fabff3662d6193f
   repo: https://github.com/lib/pq
 - name: github.com/nf/cr2
   version: 05d46fef4f2f903240751e25871cd318d001deba
@@ -35,8 +37,6 @@ imports:
 - name: github.com/ory-am/common
   version: 930cc805232909c38f2e68310b1e21f71b056d59
   repo: https://github.com/ory-am/common
-- name: github.com/ory-am/dockertest
-  version: 6bc2242bd12077b98492ab3aa178b193e785191c
 - name: github.com/pborman/uuid
   version: c55201b036063326c5b1b89ccfe45a184973d073
   repo: https://github.com/pborman/uuid
@@ -52,7 +52,7 @@ imports:
 - name: github.com/stretchr/objx
   version: cbeaeb16a013161a98496fad62933b1d21786672
 - name: github.com/stretchr/testify
-  version: 1f4a1643a57e798696635ea4c126e9127adb7d3c
+  version: 6fe211e493929a8aac0469b93f28b1d0688a9a3a
   repo: https://github.com/stretchr/testify
 - name: go4.org
   version: 40a0492aa096a3be30c750c4e2216de52a6cf2e3
@@ -62,21 +62,21 @@ imports:
 - name: golang.org/x/image
   version: 7c492694a6443a92fd349fda0c4c7b587040f161
 - name: golang.org/x/net
-  version: 6acef71eb69611914f7a30939ea9f6e194c78172
+  version: a4bbce9fcae005b22ae5443f6af064d80a6f5a55
 - name: golang.org/x/oauth2
-  version: 2cd4472c321b6cba78e029d99f0e7fe51032fd21
+  version: 045497edb6234273d67dbc25da3f2ddbc4c4cacf
 - name: golang.org/x/text
   version: a71fd10341b064c10f4a81ceac72bcf70f26ea34
   repo: https://golang.org/x/text
 - name: google.golang.org/api
-  version: a1a3189e71b3a1266c30d8f07bf6e469f7541f79
+  version: e61f6e00cdf8b78313641288c50f6e2d4e3d749c
 - name: google.golang.org/appengine
   version: 12d5545dc1cfa6047a286d5e853841b6471f4c19
   repo: https://google.golang.org/appengine
 - name: google.golang.org/cloud
-  version: 85eedc3316fe8c0d3894478c2c9dad320bd95dfd
+  version: 81286d291d92a0db53c4e9f5cff873d5781896d8
 - name: google.golang.org/grpc
-  version: 0e69ad1ebd818481c187fe2e53747279f7909c81
+  version: b1439a2743c5ca8e5606e2934bbecd0b0aa62248
   repo: https://google.golang.org/grpc
 - name: gopkg.in/airbrake/gobrake.v2
   version: c9d51adc624b5cc4c1bf8de730a09af4878ffe2d

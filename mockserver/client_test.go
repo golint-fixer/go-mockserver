@@ -5,7 +5,7 @@ package mockserver_test
 import (
 	"testing"
 	"os"
-	"github.com/ory-am/dockertest"
+	"github.com/ibrt/dockertest"
 	"time"
 	"fmt"
 	"net/http"
@@ -14,7 +14,8 @@ import (
 )
 
 var (
-	mockServerBaseUrl string
+	mockServerMockBaseUrl string
+	mockServerProxyBaseUrl string
 	mockServerClient *mockserver.Client
 )
 
@@ -30,18 +31,33 @@ func testMain(m *testing.M) int {
 }
 
 func initMockServer() dockertest.ContainerID {
-	c, ip, port, err := dockertest.SetupCustomContainer("jamesdbloom/mockserver", 1080, time.Minute)
+	c, err := dockertest.ConnectToMockserver(15, time.Millisecond*500,
+		func(url string) bool {
+			req, err := http.NewRequest("PUT", fmt.Sprintf("%v/reset", url), nil)
+			if err != nil {
+				return false
+			}
+			_, err = http.DefaultClient.Do(req)
+			if err == nil {
+				mockServerMockBaseUrl = url
+			}
+			return err == nil
+		},
+		func(url string) bool {
+			req, err := http.NewRequest("PUT", fmt.Sprintf("%v/reset", url), nil)
+			if err != nil {
+				return false
+			}
+			_, err = http.DefaultClient.Do(req)
+			if err == nil {
+				mockServerProxyBaseUrl = url
+			}
+			return err == nil
+		})
 	if err != nil {
 		panic(err)
 	}
-
-	mockServerBaseUrl = fmt.Sprintf("http://%v:%v", ip, port)
-	mockServerClient = mockserver.NewClient(mockServerBaseUrl)
-
-	dockertest.ConnectToCustomContainer(mockServerBaseUrl, 10, time.Second, func (url string) bool {
-		_, err := http.Get(url)
-		return err == nil
-	})
+	mockServerClient = mockserver.NewClient(mockServerMockBaseUrl, mockServerProxyBaseUrl)
 	return c
 }
 
@@ -52,12 +68,12 @@ func TestMockAnyResponse(t *testing.T) {
 		Send(mockServerClient)
 	assert.Nil(t, err)
 
-	resp, err := http.Get(mockServerBaseUrl + "/test")
+	resp, err := http.Get(mockServerMockBaseUrl + "/test")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	assert.Nil(t, mockServerClient.Reset())
-	resp, err = http.Get(mockServerBaseUrl + "/test")
+	assert.Nil(t, mockServerClient.MockReset())
+	resp, err = http.Get(mockServerMockBaseUrl + "/test")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }

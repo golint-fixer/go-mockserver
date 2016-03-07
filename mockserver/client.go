@@ -10,20 +10,39 @@ import (
 )
 
 type Client struct {
-	baseUrl string
-	httpClient *http.Client
-	log *log.Logger
+	mockBaseUrl string
+	proxyBaseUrl string
+	httpClient  *http.Client
+	log         *log.Logger
 }
 
-func NewClient(baseUrl string) *Client {
+func NewClient(mockBaseUrl, proxyBaseUrl string) *Client {
 	return &Client{
-		baseUrl: baseUrl,
+		mockBaseUrl: mockBaseUrl,
+		proxyBaseUrl: proxyBaseUrl,
 		httpClient: &http.Client{},
-		log: log.New(os.Stdout, fmt.Sprintf("mockserver(%v): ", baseUrl), 0),
+		log: log.New(os.Stdout, fmt.Sprintf("mockserver(%v/%v): ", mockBaseUrl, proxyBaseUrl), 0),
 	}
 }
 
-func (c *Client) Do(path string, requestBody interface{}) error {
+func (c *Client) MockDo(path string, requestBody interface{}) error {
+	return c.do(c.mockBaseUrl, path, requestBody)
+}
+
+func (c *Client) ProxyDo(path string, requestBody interface{}) error {
+	return c.do(c.proxyBaseUrl, path, requestBody)
+}
+
+func (c *Client) MockReset() error {
+	return c.MockDo("/reset", nil)
+}
+
+func (c *Client) ProxyReset() error {
+	return c.ProxyDo("/reset", nil)
+}
+
+func (c *Client) do(baseUrl, path string, requestBody interface{}) error {
+	url := fmt.Sprintf("%v%v", baseUrl, path)
 	c.log.Printf("sending request %v(%T)", path, requestBody)
 
 	var bodyReader *bytes.Buffer
@@ -38,7 +57,7 @@ func (c *Client) Do(path string, requestBody interface{}) error {
 		bodyReader = bytes.NewBuffer([]byte{})
 	}
 
-	req, err := http.NewRequest("PUT", fmt.Sprintf("%v%v", c.baseUrl, path), bodyReader)
+	req, err := http.NewRequest("PUT", url, bodyReader)
 	if err != nil {
 		return err
 	}
@@ -52,8 +71,4 @@ func (c *Client) Do(path string, requestBody interface{}) error {
 		return fmt.Errorf("request failed with status %v", resp.StatusCode)
 	}
 	return nil
-}
-
-func (c *Client) Reset() error {
-	return c.Do("/reset", nil)
 }
