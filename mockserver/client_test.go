@@ -109,12 +109,12 @@ func TestProxy(t *testing.T) {
 			WithTimes(1, true))
 	assert.Nil(t, err)
 
-	r, err := mockServerClient.RetrieveProxy(
+	_, err = mockServerClient.RetrieveProxy(
 		mockserver.NewRetrieve().
 			MatchRequest(mockserver.NewRequest("GET", "/")))
 	assert.Nil(t, err)
 
-	r, err = mockServerClient.RetrieveProxy(
+	_, err = mockServerClient.RetrieveProxy(
 		mockserver.NewRetrieve().
 		MatchRequest(mockserver.NewRequest("POST", "/")))
 	assert.Nil(t, err)
