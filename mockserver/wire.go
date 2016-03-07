@@ -3,7 +3,7 @@ package mockserver
 type Request struct {
 	Method string `json:"method"`
 	Path string `json:"path"`
-	QueryStringParameters []*NameValues `json:"queryStringParameters,omitempty`
+	QueryStringParameters []*NameValues `json:"queryStringParameters,omitempty"`
 	Headers []*NameValues `json:"headers,omitempty"`
 	Cookies []*NameValues `json:"cookies,omitempty"`
 	Body *Body `json:"body,omitempty"`
@@ -144,7 +144,7 @@ type Body struct {
 	MatchType string `json:"matchType,omitempty"`
 }
 
-type Times struct {
+type MockTimes struct {
 	RemainingTimes int `json:remainingTimes"`
 	Unlimited bool `json:"unlimited"`
 }
@@ -158,7 +158,7 @@ type TimeToLive struct {
 type MockAnyResponse struct {
 	HttpRequest *Request `json:"httpRequest"`
 	HttpResponse *Response `json:"httpResponse"`
-	Times *Times `json:"times,omitempty"`
+	Times *MockTimes `json:"times,omitempty"`
 	TimeToLive *TimeToLive `json:"timeToLive,omitempty"`
 }
 
@@ -177,7 +177,7 @@ func (m *MockAnyResponse) Respond(response *Response) *MockAnyResponse {
 }
 
 func (m *MockAnyResponse) WithTimes(remainingTimes int) *MockAnyResponse {
-	m.Times = &Times{
+	m.Times = &MockTimes{
 		RemainingTimes: remainingTimes,
 		Unlimited: false,
 	}
@@ -193,6 +193,51 @@ func (m *MockAnyResponse) WithTimeToLive(timeUnit string, timeToLive float64) *M
 	return m
 }
 
-func (m *MockAnyResponse) Send(client *Client) error {
-	return client.MockDo("/expectation", m)
+type Verify struct {
+	HttpRequest *Request `json:"httpRequest"`
+	Times *ProxyTimes `json:"times"`
+}
+
+func NewVerify() *Verify {
+	return &Verify{}
+}
+
+func (v *Verify) MatchRequest(request *Request) *Verify {
+	v.HttpRequest = request
+	return v
+}
+
+func (v *Verify) WithTimes(count int, exact bool) *Verify {
+	v.Times = &ProxyTimes{
+		Count: count,
+		Exact: exact,
+	}
+	return v
+}
+
+type ProxyTimes struct {
+	Count int `json:"count"`
+	Exact bool `json:"exact"`
+}
+
+type Retrieve struct {
+	HttpRequest *Request `json:"httpRequest"`
+}
+
+func NewRetrieve() *Retrieve {
+	return &Retrieve{}
+}
+
+func (r *Retrieve) MatchRequest(request *Request) *Retrieve {
+	r.HttpRequest = request
+	return r
+}
+
+type RetrievedRequest struct {
+	Method string `json:"method"`
+	Path string `json:"path"`
+	Headers []*NameValues `json:"headers"`
+	KeepAlive bool `json:"keepAlive"`
+	Secure bool `json:"secure"`
+	Body string `json:"body,omitempty"`
 }

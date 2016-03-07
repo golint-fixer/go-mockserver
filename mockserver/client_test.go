@@ -11,23 +11,33 @@ import (
 	"net/http"
 	"github.com/ibrt/go-mockserver/mockserver"
 	"github.com/stretchr/testify/assert"
+	"net/url"
+	"bytes"
 )
 
 var (
 	mockServerMockBaseUrl string
 	mockServerProxyBaseUrl string
 	mockServerClient *mockserver.Client
+	proxyClient *http.Client
 )
 
 func TestMain(m *testing.M) {
 	os.Exit(testMain(m))
 }
 
-func testMain(m *testing.M) int {
-	c := initMockServer()
-	defer c.KillRemove()
+func testMain(m *testing.M) (result int) {
+	id := initMockServer()
+	defer func() {
+		if result == 0 {
+			id.KillRemove()
+		} else {
+			id.Kill()
+		}
+	}()
 
-	return m.Run()
+	result = m.Run()
+	return
 }
 
 func initMockServer() dockertest.ContainerID {
@@ -57,23 +67,59 @@ func initMockServer() dockertest.ContainerID {
 	if err != nil {
 		panic(err)
 	}
+	proxyUrl, err := url.Parse(mockServerProxyBaseUrl)
+	if err != nil {
+		panic(err)
+	}
+	proxyClient = &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyURL(proxyUrl),
+		},
+	}
 	mockServerClient = mockserver.NewClient(mockServerMockBaseUrl, mockServerProxyBaseUrl)
 	return c
 }
 
 func TestMockAnyResponse(t *testing.T) {
-	err := mockserver.NewMockAnyResponse().
-		When(mockserver.NewRequest("GET", "/test")).
-		Respond(mockserver.NewResponse(http.StatusOK)).
-		Send(mockServerClient)
+	err := mockServerClient.MockAnyResponse(
+		mockserver.NewMockAnyResponse().
+			When(mockserver.NewRequest("GET", "/test")).
+			Respond(mockserver.NewResponse(http.StatusOK)))
 	assert.Nil(t, err)
 
 	resp, err := http.Get(mockServerMockBaseUrl + "/test")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
 
-	assert.Nil(t, mockServerClient.MockReset())
-	resp, err = http.Get(mockServerMockBaseUrl + "/test")
+func TestMockReset(t *testing.T) {
+	assert.Nil(t, mockServerClient.ResetMocks())
+}
+
+func TestProxy(t *testing.T) {
+	_, err := proxyClient.Get("http://www.google.com/")
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+
+	_, err = proxyClient.Post("http://www.google.com/", "application/json", bytes.NewBuffer([]byte("someBody")))
+	assert.Nil(t, err)
+
+	err = mockServerClient.VerifyProxy(
+		mockserver.NewVerify().
+			MatchRequest(mockserver.NewRequest("GET", "/")).
+			WithTimes(1, true))
+	assert.Nil(t, err)
+
+	r, err := mockServerClient.RetrieveProxy(
+		mockserver.NewRetrieve().
+			MatchRequest(mockserver.NewRequest("GET", "/")))
+	assert.Nil(t, err)
+
+	r, err = mockServerClient.RetrieveProxy(
+		mockserver.NewRetrieve().
+		MatchRequest(mockserver.NewRequest("POST", "/")))
+	assert.Nil(t, err)
+}
+
+func TestProxyReset(t *testing.T) {
+	assert.Nil(t, mockServerClient.ResetProxy())
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"encoding/json"
 	"bytes"
+	"io/ioutil"
 )
 
 type Client struct {
@@ -25,50 +26,76 @@ func NewClient(mockBaseUrl, proxyBaseUrl string) *Client {
 	}
 }
 
-func (c *Client) MockDo(path string, requestBody interface{}) error {
+func (c *Client) MockAnyResponse(mockAnyResponse *MockAnyResponse) error {
+	 _, err := c.mockDo("/expectation", mockAnyResponse)
+	return err
+}
+
+func (c *Client) ResetMocks() error {
+	_, err := c.mockDo("/reset", nil)
+	return err
+}
+
+func (c *Client) VerifyProxy(verify *Verify) error {
+	_, err := c.proxyDo("/verify", verify)
+	return err
+}
+
+func (c *Client) RetrieveProxy(retrieve *Retrieve) ([]*RetrievedRequest, error) {
+	respBody, err := c.proxyDo("/retrieve", retrieve.HttpRequest)
+	if err != nil {
+		return nil, err
+	}
+	requests := make([]*RetrievedRequest, 0)
+	if err := json.Unmarshal(respBody, &requests); err != nil {
+		return nil, err
+	}
+	return requests, nil
+}
+
+func (c *Client) ResetProxy() error {
+	_, err := c.proxyDo("/reset", nil)
+	return err
+}
+
+func (c *Client) mockDo(path string, requestBody interface{}) ([]byte, error) {
 	return c.do(c.mockBaseUrl, path, requestBody)
 }
 
-func (c *Client) ProxyDo(path string, requestBody interface{}) error {
+func (c *Client) proxyDo(path string, requestBody interface{}) ([]byte, error) {
 	return c.do(c.proxyBaseUrl, path, requestBody)
 }
 
-func (c *Client) MockReset() error {
-	return c.MockDo("/reset", nil)
-}
-
-func (c *Client) ProxyReset() error {
-	return c.ProxyDo("/reset", nil)
-}
-
-func (c *Client) do(baseUrl, path string, requestBody interface{}) error {
+func (c *Client) do(baseUrl, path string, requestBody interface{}) ([]byte, error) {
 	url := fmt.Sprintf("%v%v", baseUrl, path)
-	c.log.Printf("sending request %v(%T)", path, requestBody)
-
+	c.log.Printf("sending request %v(%T)", url, requestBody)
 	var bodyReader *bytes.Buffer
-
 	if requestBody != nil {
 		serializedBody, err := json.Marshal(requestBody)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		bodyReader = bytes.NewBuffer(serializedBody)
+		c.log.Printf("request body %s\n", serializedBody)
 	} else {
 		bodyReader = bytes.NewBuffer([]byte{})
 	}
-
 	req, err := http.NewRequest("PUT", url, bodyReader)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
-
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return fmt.Errorf("request failed with status %v", resp.StatusCode)
+		return nil, fmt.Errorf("request failed with status %v", resp.StatusCode)
 	}
-	return nil
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	c.log.Printf("mockserver response: %s", respBody)
+	return respBody, nil
 }
