@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/url"
 	"crypto/tls"
+	"bytes"
 )
 
 var (
@@ -104,6 +105,9 @@ func TestProxy(t *testing.T) {
 	_, err := proxyClient.Get("https://www.google.com/")
 	assert.Nil(t, err)
 
+	_, err = proxyClient.Post("http://www.google.com/", "application/json", bytes.NewBuffer([]byte("{ \"hello\": true }")))
+	assert.Nil(t, err)
+
 	err = mockServerClient.VerifyProxy(
 		mockserver.NewVerify().
 			MatchRequest(mockserver.NewRequest("GET", "/")).
@@ -113,6 +117,11 @@ func TestProxy(t *testing.T) {
 	_, err = mockServerClient.RetrieveProxy(
 		mockserver.NewRetrieve().
 			MatchRequest(mockserver.NewRequest("GET", "/")))
+	assert.Nil(t, err)
+
+	_, err = mockServerClient.RetrieveProxy(
+		mockserver.NewRetrieve().
+		MatchRequest(mockserver.NewRequest("POST", "/")))
 	assert.Nil(t, err)
 }
 

@@ -239,5 +239,5 @@ type RetrievedRequest struct {
 	Headers []*NameValues `json:"headers"`
 	KeepAlive bool `json:"keepAlive"`
 	Secure bool `json:"secure"`
-	Body string `json:"body,omitempty"`
+	Body []byte `json:"body,omitempty"`
 }
