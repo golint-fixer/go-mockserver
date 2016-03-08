@@ -31,14 +31,32 @@ func (c *Client) MockAnyResponse(mockAnyResponse *MockAnyResponse) error {
 	return err
 }
 
+func (c *Client) MustMockAnyResponse(mockAnyResponse *MockAnyResponse) {
+	if err := c.MockAnyResponse(mockAnyResponse); err != nil {
+		panic(err)
+	}
+}
+
 func (c *Client) ResetMocks() error {
 	_, err := c.mockDo("/reset", nil)
 	return err
 }
 
+func (c *Client) MustResetMocks() {
+	if err := c.ResetMocks(); err != nil {
+		panic(err)
+	}
+}
+
 func (c *Client) VerifyProxy(verify *Verify) error {
 	_, err := c.proxyDo("/verify", verify)
 	return err
+}
+
+func (c *Client) MustVerifyProxy(verify *Verify) {
+	if err := c.VerifyProxy(verify); err != nil {
+		panic(err)
+	}
 }
 
 func (c *Client) RetrieveProxy(retrieve *Retrieve) ([]*RetrievedRequest, error) {
@@ -53,9 +71,23 @@ func (c *Client) RetrieveProxy(retrieve *Retrieve) ([]*RetrievedRequest, error) 
 	return requests, nil
 }
 
+func (c *Client) MustRetrieveProxy(retrieve *Retrieve) []*RetrievedRequest {
+	if requests, err := c.RetrieveProxy(retrieve); err == nil {
+		return requests
+	} else {
+		panic(err)
+	}
+}
+
 func (c *Client) ResetProxy() error {
 	_, err := c.proxyDo("/reset", nil)
 	return err
+}
+
+func (c *Client) MustResetProxy() {
+	if err := c.ResetProxy(); err != nil {
+		panic(err)
+	}
 }
 
 func (c *Client) mockDo(path string, requestBody interface{}) ([]byte, error) {

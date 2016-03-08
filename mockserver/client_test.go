@@ -12,7 +12,7 @@ import (
 	"github.com/ibrt/go-mockserver/mockserver"
 	"github.com/stretchr/testify/assert"
 	"net/url"
-	"bytes"
+	"crypto/tls"
 )
 
 var (
@@ -74,6 +74,9 @@ func initMockServer() dockertest.ContainerID {
 	proxyClient = &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyURL(proxyUrl),
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
 		},
 	}
 	mockServerClient = mockserver.NewClient(mockServerMockBaseUrl, mockServerProxyBaseUrl)
@@ -90,6 +93,7 @@ func TestMockAnyResponse(t *testing.T) {
 	resp, err := http.Get(mockServerMockBaseUrl + "/test")
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	t.Fail()
 }
 
 func TestMockReset(t *testing.T) {
@@ -97,10 +101,7 @@ func TestMockReset(t *testing.T) {
 }
 
 func TestProxy(t *testing.T) {
-	_, err := proxyClient.Get("http://www.google.com/")
-	assert.Nil(t, err)
-
-	_, err = proxyClient.Post("http://www.google.com/", "application/json", bytes.NewBuffer([]byte("someBody")))
+	_, err := proxyClient.Get("https://www.google.com/")
 	assert.Nil(t, err)
 
 	err = mockServerClient.VerifyProxy(
@@ -112,11 +113,6 @@ func TestProxy(t *testing.T) {
 	_, err = mockServerClient.RetrieveProxy(
 		mockserver.NewRetrieve().
 			MatchRequest(mockserver.NewRequest("GET", "/")))
-	assert.Nil(t, err)
-
-	_, err = mockServerClient.RetrieveProxy(
-		mockserver.NewRetrieve().
-		MatchRequest(mockserver.NewRequest("POST", "/")))
 	assert.Nil(t, err)
 }
 
