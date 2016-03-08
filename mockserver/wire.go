@@ -1,5 +1,7 @@
 package mockserver
 
+import "encoding/json"
+
 type Request struct {
 	Method string `json:"method"`
 	Path string `json:"path"`
@@ -239,5 +241,5 @@ type RetrievedRequest struct {
 	Headers []*NameValues `json:"headers"`
 	KeepAlive bool `json:"keepAlive"`
 	Secure bool `json:"secure"`
-	Body []byte `json:"body,omitempty"`
+	Body json.RawMessage `json:"body,omitempty"`
 }
