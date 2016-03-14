@@ -147,7 +147,7 @@ type Body struct {
 }
 
 type MockTimes struct {
-	RemainingTimes int  `json:remainingTimes"`
+	RemainingTimes int  `json:"remainingTimes"`
 	Unlimited      bool `json:"unlimited"`
 }
 
