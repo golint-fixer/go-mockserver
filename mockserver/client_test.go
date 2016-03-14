@@ -25,7 +25,6 @@ mockserver:
 func TestMockAnyResponse(t *testing.T) {
 	compose := compose.MustStart(composeYML, true, true)
 	defer compose.Kill()
-	spew.Dump(compose.Containers)
 	client := newClient(compose.Containers["mockserver"])
 
 	err := client.MockAnyResponse(
