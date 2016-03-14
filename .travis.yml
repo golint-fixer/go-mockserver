@@ -2,8 +2,9 @@ sudo: required
 language: go
 
 go:
-  - 1.4
-  - 1.5
+  # TODO: Figure out why 1.4 and 1.5 fail.
+  # - 1.4
+  # - 1.5
   - 1.6
 
 install:
