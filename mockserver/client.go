@@ -1,33 +1,41 @@
 package mockserver
 
 import (
-	"log"
-	"os"
-	"fmt"
-	"net/http"
-	"encoding/json"
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
 )
 
 type Client struct {
-	mockBaseUrl string
-	proxyBaseUrl string
-	httpClient  *http.Client
-	log         *log.Logger
+	mockBaseURL  string
+	proxyBaseURL string
+	httpClient   *http.Client
+	log          *log.Logger
 }
 
 func NewClient(mockBaseUrl, proxyBaseUrl string) *Client {
 	return &Client{
-		mockBaseUrl: mockBaseUrl,
-		proxyBaseUrl: proxyBaseUrl,
-		httpClient: &http.Client{},
-		log: log.New(os.Stdout, fmt.Sprintf("mockserver(%v/%v): ", mockBaseUrl, proxyBaseUrl), 0),
+		mockBaseURL:  mockBaseUrl,
+		proxyBaseURL: proxyBaseUrl,
+		httpClient:   &http.Client{},
+		log:          log.New(os.Stdout, fmt.Sprintf("mockserver(%v/%v): ", mockBaseUrl, proxyBaseUrl), 0),
 	}
 }
 
+func (c *Client) GetMockURL(path string) string {
+	return fmt.Sprintf("%v%v", c.mockBaseURL, path)
+}
+
+func (c *Client) GetProxyURL(path string) string {
+	return fmt.Sprintf("%v%v", c.proxyBaseURL, path)
+}
+
 func (c *Client) MockAnyResponse(mockAnyResponse *MockAnyResponse) error {
-	 _, err := c.mockDo("/expectation", mockAnyResponse)
+	_, err := c.mockDo("/expectation", mockAnyResponse)
 	return err
 }
 
@@ -91,11 +99,11 @@ func (c *Client) MustResetProxy() {
 }
 
 func (c *Client) mockDo(path string, requestBody interface{}) ([]byte, error) {
-	return c.do(c.mockBaseUrl, path, requestBody)
+	return c.do(c.mockBaseURL, path, requestBody)
 }
 
 func (c *Client) proxyDo(path string, requestBody interface{}) ([]byte, error) {
-	return c.do(c.proxyBaseUrl, path, requestBody)
+	return c.do(c.proxyBaseURL, path, requestBody)
 }
 
 func (c *Client) do(baseUrl, path string, requestBody interface{}) ([]byte, error) {

@@ -1,129 +1,112 @@
-// +build integration
-
 package mockserver_test
 
 import (
-	"testing"
-	"os"
-	"github.com/ibrt/dockertest"
-	"time"
+	"bytes"
+	"crypto/tls"
 	"fmt"
-	"net/http"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/ibrt/go-compose/compose"
 	"github.com/ibrt/go-mockserver/mockserver"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"net/url"
-	"crypto/tls"
-	"bytes"
+	"testing"
 )
 
-var (
-	mockServerMockBaseUrl string
-	mockServerProxyBaseUrl string
-	mockServerClient *mockserver.Client
-	proxyClient *http.Client
-)
-
-func TestMain(m *testing.M) {
-	os.Exit(testMain(m))
-}
-
-func testMain(m *testing.M) (result int) {
-	id := initMockServer()
-	defer func() {
-		if result == 0 {
-			id.KillRemove()
-		} else {
-			id.Kill()
-		}
-	}()
-
-	result = m.Run()
-	return
-}
-
-func initMockServer() dockertest.ContainerID {
-	c, err := dockertest.ConnectToMockserver(15, time.Millisecond*500,
-		func(url string) bool {
-			req, err := http.NewRequest("PUT", fmt.Sprintf("%v/reset", url), nil)
-			if err != nil {
-				return false
-			}
-			_, err = http.DefaultClient.Do(req)
-			if err == nil {
-				mockServerMockBaseUrl = url
-			}
-			return err == nil
-		},
-		func(url string) bool {
-			req, err := http.NewRequest("PUT", fmt.Sprintf("%v/reset", url), nil)
-			if err != nil {
-				return false
-			}
-			_, err = http.DefaultClient.Do(req)
-			if err == nil {
-				mockServerProxyBaseUrl = url
-			}
-			return err == nil
-		})
-	if err != nil {
-		panic(err)
-	}
-	proxyUrl, err := url.Parse(mockServerProxyBaseUrl)
-	if err != nil {
-		panic(err)
-	}
-	proxyClient = &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyURL(proxyUrl),
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
-	mockServerClient = mockserver.NewClient(mockServerMockBaseUrl, mockServerProxyBaseUrl)
-	return c
-}
+var composeYML = `
+mockserver:
+  container_name: mockserver
+  image: jamesdbloom/mockserver
+  ports:
+    - "1080"
+    - "1090"
+`
 
 func TestMockAnyResponse(t *testing.T) {
-	err := mockServerClient.MockAnyResponse(
+	compose := compose.MustStart(composeYML, true, true)
+	defer compose.Kill()
+	spew.Dump(compose.Containers)
+	client := newClient(compose.Containers["mockserver"])
+
+	err := client.MockAnyResponse(
 		mockserver.NewMockAnyResponse().
 			When(mockserver.NewRequest("GET", "/test")).
 			Respond(mockserver.NewResponse(http.StatusOK)))
 	assert.Nil(t, err)
 
-	resp, err := http.Get(mockServerMockBaseUrl + "/test")
+	resp, err := http.Get(client.GetMockURL("/test"))
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestMockReset(t *testing.T) {
-	assert.Nil(t, mockServerClient.ResetMocks())
+	compose := compose.MustStart(composeYML, true, true)
+	defer compose.Kill()
+	client := newClient(compose.Containers["mockserver"])
+
+	assert.Nil(t, client.ResetMocks())
 }
 
 func TestProxy(t *testing.T) {
-	_, err := proxyClient.Get("https://www.google.com/")
+	compose := compose.MustStart(composeYML, true, true)
+	defer compose.Kill()
+	client := newClient(compose.Containers["mockserver"])
+	httpClient := newHttpClient(client.GetProxyURL(""))
+
+	_, err := httpClient.Get("https://www.google.com/")
 	assert.Nil(t, err)
 
-	_, err = proxyClient.Post("http://www.google.com/", "application/json", bytes.NewBuffer([]byte("{ \"hello\": true }")))
+	_, err = httpClient.Post("http://www.google.com/", "application/json", bytes.NewBuffer([]byte("{ \"hello\": true }")))
 	assert.Nil(t, err)
 
-	err = mockServerClient.VerifyProxy(
+	err = client.VerifyProxy(
 		mockserver.NewVerify().
 			MatchRequest(mockserver.NewRequest("GET", "/")).
 			WithTimes(1, true))
 	assert.Nil(t, err)
 
-	_, err = mockServerClient.RetrieveProxy(
+	_, err = client.RetrieveProxy(
 		mockserver.NewRetrieve().
 			MatchRequest(mockserver.NewRequest("GET", "/")))
 	assert.Nil(t, err)
 
-	_, err = mockServerClient.RetrieveProxy(
+	_, err = client.RetrieveProxy(
 		mockserver.NewRetrieve().
-		MatchRequest(mockserver.NewRequest("POST", "/")))
+			MatchRequest(mockserver.NewRequest("POST", "/")))
 	assert.Nil(t, err)
 }
 
 func TestProxyReset(t *testing.T) {
-	assert.Nil(t, mockServerClient.ResetProxy())
+	compose := compose.MustStart(composeYML, true, true)
+	defer compose.Kill()
+	client := newClient(compose.Containers["mockserver"])
+
+	assert.Nil(t, client.ResetProxy())
+}
+
+func newClient(container *compose.Container) *mockserver.Client {
+	client := mockserver.NewClient(
+		fmt.Sprintf("http://%v:%v", compose.MustInferDockerHost(), container.MustGetFirstPublicPort(1080, "tcp")),
+		fmt.Sprintf("http://%v:%v", compose.MustInferDockerHost(), container.MustGetFirstPublicPort(1090, "tcp")))
+
+	container.MustConnectWithDefaults(1080, "tcp", func(publicPort uint32) error {
+		return client.ResetMocks()
+	})
+
+	return client
+}
+
+func newHttpClient(proxyURL string) *http.Client {
+	parsedProxyURL, err := url.Parse(proxyURL)
+	if err != nil {
+		panic(err)
+	}
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyURL(parsedProxyURL),
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
 }

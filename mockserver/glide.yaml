@@ -1,3 +1,8 @@
 package: github.com/ibrt/go-mockserver/mockserver
 import:
-- package: github.com/ibrt/dockertest
+- package: github.com/stretchr/testify
+  subpackages:
+  - /assert
+- package: github.com/ibrt/go-compose
+  subpackages:
+  - /compose
