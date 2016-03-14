@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/ibrt/go-compose/compose"
 	"github.com/ibrt/go-mockserver/mockserver"
 	"github.com/stretchr/testify/assert"
