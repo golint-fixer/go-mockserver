@@ -87,7 +87,7 @@ func newClient(container *compose.Container) *mockserver.Client {
 		fmt.Sprintf("http://%v:%v", compose.MustInferDockerHost(), container.MustGetFirstPublicPort(1080, "tcp")),
 		fmt.Sprintf("http://%v:%v", compose.MustInferDockerHost(), container.MustGetFirstPublicPort(1090, "tcp")))
 
-	container.MustConnectWithDefaults(1080, "tcp", func(publicPort uint32) error {
+	compose.MustConnectWithDefaults(func() error {
 		return client.ResetMocks()
 	})
 
