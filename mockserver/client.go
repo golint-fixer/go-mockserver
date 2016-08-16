@@ -73,6 +73,9 @@ func (c *Client) RetrieveProxy(retrieve *Retrieve) ([]*RetrievedRequest, error) 
 		return nil, err
 	}
 	requests := make([]*RetrievedRequest, 0)
+	if respBody == nil || len(respBody) == 0 {
+		return requests, nil
+	}
 	if err := json.Unmarshal(respBody, &requests); err != nil {
 		return nil, err
 	}
